@@ -6,6 +6,7 @@ import Html.Attributes as HA
 import Http
 import Date exposing (Date)
 import Date.Extra
+import Random
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (decode, required, resolve)
 import Json.Decode.Extra exposing (parseInt)
@@ -35,6 +36,7 @@ type Msg
     | LoadComic Int
     | PreviousComic
     | NextComic
+    | RandomComic
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -91,6 +93,14 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        RandomComic ->
+            case model.latestId of
+                Just lastId ->
+                    ( model, Random.generate LoadComic (Random.int 1 lastId) )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
 
 isLatest : Model -> Bool
 isLatest model =
@@ -125,8 +135,9 @@ view model =
     case model.comic of
         RemoteData.Success comic ->
             H.div []
-                [ viewComic comic
+                [ viewComicHeader comic
                 , viewNavigation model
+                , viewComicBody comic
                 ]
 
         RemoteData.Failure error ->
@@ -140,12 +151,35 @@ view model =
                 [ H.text "Fetch latest comic" ]
 
 
-viewComic : Comic -> Html Msg
-viewComic comic =
+viewComicHeader : Comic -> Html Msg
+viewComicHeader comic =
     H.div []
-        [ H.h4 [] [ H.text comic.title ]
-        , H.div [] [ H.img [ HA.src comic.img ] [] ]
-        , H.text comic.altTitle
+        [ H.h4 [] [ H.text (toString comic.id ++ " - " ++ comic.title) ]
+        ]
+
+
+viewComicBody : Comic -> Html Msg
+viewComicBody comic =
+    H.div []
+        [ H.div [] [ H.img [ HA.src comic.img ] [] ]
+        , H.div []
+            [ H.b [] [ H.text "Alt title: " ]
+            , H.text comic.altTitle
+            ]
+        , H.div []
+            [ H.b [] [ H.text "Published on: " ]
+            , H.text (Date.Extra.toFormattedString "y-M-d" comic.publishedOn)
+            ]
+        , (case comic.transcript of
+            Just transcript ->
+                H.div []
+                    [ H.b [] [ H.text "Transcript: " ]
+                    , H.pre [] [ H.text transcript ]
+                    ]
+
+            Nothing ->
+                H.text ""
+          )
         ]
 
 
@@ -153,6 +187,7 @@ viewNavigation : Model -> Html Msg
 viewNavigation model =
     H.div []
         [ viewIf (not (isFirst model)) <| H.button [ HE.onClick PreviousComic ] [ H.text "Previous" ]
+        , H.button [ HE.onClick RandomComic ] [ H.text "Random" ]
         , viewIf (not (isLatest model)) <|
             H.button [ HE.onClick NextComic ] [ H.text "Next" ]
         ]
@@ -163,7 +198,8 @@ type alias Comic =
     , title : String
     , altTitle : String
     , img : String
-    , date : Date
+    , publishedOn : Date
+    , transcript : Maybe String
     }
 
 
@@ -174,16 +210,25 @@ comicDecoder =
         |> required "title" Decode.string
         |> required "alt" Decode.string
         |> required "img" Decode.string
+        |> required "transcript" possiblyEmptyString
         |> required "year" parseInt
         |> required "month" parseInt
         |> required "day" parseInt
         |> resolve
 
 
-toComicConstructor : Int -> String -> String -> String -> Int -> Int -> Int -> Decoder Comic
-toComicConstructor id title altTitle img year month day =
+toComicConstructor :
+    Int
+    -> String
+    -> String
+    -> String
+    -> Maybe String
+    -> Int
+    -> Int
+    -> Int
+    -> Decoder Comic
+toComicConstructor id title altTitle img transcript year month day =
     let
-        -- mont
         date =
             Date.Extra.fromCalendarDate
                 year
@@ -195,7 +240,8 @@ toComicConstructor id title altTitle img year month day =
             , title = title
             , altTitle = altTitle
             , img = img
-            , date = date
+            , publishedOn = date
+            , transcript = transcript
             }
 
 
@@ -223,22 +269,24 @@ getComic id =
         |> Cmd.map ComicResponse
 
 
-
--- handleRequestComplete : Result Http.Error Comic -> Msg
--- handleRequestComplete result =
---     case result of
---         Ok post ->
---             SetComic post
---         Err error ->
---             SetError
-
-
 viewIf : Bool -> Html msg -> Html msg
 viewIf condition content =
     if condition then
         content
     else
         H.text ""
+
+
+possiblyEmptyString : Decoder (Maybe String)
+possiblyEmptyString =
+    let
+        emptyStringToNothing string =
+            if String.isEmpty string then
+                Nothing
+            else
+                Just string
+    in
+        Decode.map emptyStringToNothing Decode.string
 
 
 main : Program Never Model Msg
