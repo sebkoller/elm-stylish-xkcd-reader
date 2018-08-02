@@ -1,8 +1,14 @@
 module Main exposing (main)
 
-import Html as H exposing (Html)
-import Html.Events as HE
-import Html.Attributes as HA
+import Html exposing (Html)
+import Html.Attributes
+import Element exposing (Element, el)
+import Element.Region
+import Element.Input
+import Element.Background as Background
+import Element.Border as Border
+import Element.Font as Font
+import Color
 import Http
 import Date exposing (Date)
 import Date.Extra
@@ -11,6 +17,10 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (decode, required, resolve)
 import Json.Decode.Extra exposing (parseInt)
 import RemoteData exposing (WebData)
+import Navigation exposing (Location)
+import UrlParser as Url exposing (Parser)
+import Keyboard
+import FontAwesome
 
 
 type alias Model =
@@ -20,9 +30,52 @@ type alias Model =
     }
 
 
-initialModel : ( Model, Cmd Msg )
-initialModel =
-    ( Model RemoteData.Loading Latest Nothing, getLatestComic )
+init : Location -> ( Model, Cmd Msg )
+init location =
+    -- if String.isEmpty location.hash then
+    --     ( Model RemoteData.Loading Latest Nothing, getLatestComic )
+    -- if String.isEmpty location.hash then
+    --     String.
+    --     ( Model RemoteData.Loading (ComicId location.hash) Nothing, getLatestComic )
+    -- set (fromLocation location)
+    -- setRoute : Maybe route -> (Model,
+    setRoute (fromLocation location)
+
+
+setRoute : Maybe Route -> ( Model, Cmd Msg )
+setRoute maybeRoute =
+    let
+        latest =
+            ( Model RemoteData.Loading Latest Nothing, getLatestComic )
+    in
+        case maybeRoute of
+            Nothing ->
+                latest
+
+            Just Latest ->
+                latest
+
+            Just Random ->
+                latest
+
+            Just (ComicId id) ->
+                ( Model RemoteData.Loading (ComicId id) Nothing, getComic id )
+
+
+fromLocation : Location -> Maybe Route
+fromLocation location =
+    if String.isEmpty location.hash then
+        Just Latest
+    else
+        Url.parseHash route location
+
+
+route : Parser (Route -> a) a
+route =
+    Url.oneOf
+        [ Url.map Latest (Url.s "")
+        , Url.map ComicId (Url.int)
+        ]
 
 
 type Route
@@ -37,6 +90,8 @@ type Msg
     | PreviousComic
     | NextComic
     | RandomComic
+    | KeyMsg Keyboard.KeyCode
+    | UrlChange Location
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -63,7 +118,10 @@ update msg model =
                 | comic = RemoteData.Loading
                 , route = (ComicId id)
               }
-            , getComic id
+            , Cmd.batch
+                [ getComic id
+                , Navigation.newUrl ("#" ++ toString id)
+                ]
             )
 
         PreviousComic ->
@@ -101,6 +159,31 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
+        KeyMsg code ->
+            let
+                _ =
+                    Debug.log "code" code
+            in
+                case code of
+                    37 ->
+                        update PreviousComic model
+
+                    39 ->
+                        update NextComic model
+
+                    28 ->
+                        update RandomComic model
+
+                    _ ->
+                        ( model, Cmd.none )
+
+        UrlChange location ->
+            let
+                _ =
+                    Debug.log "loc" location.hash
+            in
+                ( model, Cmd.none )
+
 
 isLatest : Model -> Bool
 isLatest model =
@@ -130,66 +213,139 @@ isFirst model =
             False
 
 
+icon : FontAwesome.Icon -> Element msg
+icon =
+    Element.html << FontAwesome.icon
+
+
 view : Model -> Html Msg
 view model =
-    case model.comic of
-        RemoteData.Success comic ->
-            H.div []
-                [ viewComicHeader comic
-                , viewNavigation model
-                , viewComicBody comic
-                ]
+    Element.layout
+        [ Background.color Color.white
+        , Element.width Element.fill
+        ]
+    <|
+        case model.comic of
+            RemoteData.Success comic ->
+                Element.el [ Element.centerX ]
+                    (Element.column [ Element.spacing 14 ]
+                        [ viewComicHeader comic
+                        , viewNavigation model
+                        , viewComicBody comic
+                        , Element.html FontAwesome.useSvg
+                        ]
+                    )
 
-        RemoteData.Failure error ->
-            H.text <| toString error
+            RemoteData.Failure error ->
+                Element.text <| toString error
 
-        RemoteData.Loading ->
-            H.text "Loading comic..."
+            RemoteData.Loading ->
+                Element.text "Loading comic..."
 
-        RemoteData.NotAsked ->
-            H.button []
-                [ H.text "Fetch latest comic" ]
+            RemoteData.NotAsked ->
+                Element.text "Something went wrong..."
 
 
-viewComicHeader : Comic -> Html Msg
+viewComicHeader : Comic -> Element Msg
 viewComicHeader comic =
-    H.div []
-        [ H.h4 [] [ H.text (toString comic.id ++ " - " ++ comic.title) ]
+    Element.el
+        [ Element.Region.heading 1
+        , Element.centerX
+        , Font.size 30
+        , Font.bold
         ]
+        (Element.text ("#" ++ toString comic.id ++ " - " ++ comic.title))
 
 
-viewComicBody : Comic -> Html Msg
+viewComicBody : Comic -> Element Msg
 viewComicBody comic =
-    H.div []
-        [ H.div [] [ H.img [ HA.src comic.img ] [] ]
-        , H.div []
-            [ H.b [] [ H.text "Alt title: " ]
-            , H.text comic.altTitle
-            ]
-        , H.div []
-            [ H.b [] [ H.text "Published on: " ]
-            , H.text (Date.Extra.toFormattedString "y-M-d" comic.publishedOn)
-            ]
-        , (case comic.transcript of
-            Just transcript ->
-                H.div []
-                    [ H.b [] [ H.text "Transcript: " ]
-                    , H.pre [] [ H.text transcript ]
-                    ]
+    Element.column
+        [ Element.Region.mainContent
+        , Element.spacing 10
+        ]
+        [ Element.image [ Element.centerX ]
+            { src = comic.img, description = "comic image" }
+        , comicAttribute "Alt title: " comic.altTitle
+        , comicAttribute
+            "Published on: "
+            (Date.Extra.toFormattedString "y-M-d" comic.publishedOn)
 
-            Nothing ->
-                H.text ""
-          )
+        -- , (case comic.transcript of
+        --     Just transcript ->
+        --         Element.paragraph []
+        --             [ el [ Font.bold ] (Element.text "Transcript: ")
+        --             , Element.html (Html.pre [] [ Html.text transcript ])
+        --             ]
+        --     Nothing ->
+        --         Element.none
+        --   )
         ]
 
 
-viewNavigation : Model -> Html Msg
+viewNavigation : Model -> Element Msg
 viewNavigation model =
-    H.div []
-        [ viewIf (not (isFirst model)) <| H.button [ HE.onClick PreviousComic ] [ H.text "Previous" ]
-        , H.button [ HE.onClick RandomComic ] [ H.text "Random" ]
-        , viewIf (not (isLatest model)) <|
-            H.button [ HE.onClick NextComic ] [ H.text "Next" ]
+    el [ Element.centerX ]
+        (Element.row [ Element.spacing 5, Element.Region.navigation ]
+            [ navButton
+                (isFirst model)
+                [ icon FontAwesome.longArrowAltLeft
+                , Element.text " Previous"
+                ]
+                PreviousComic
+            , navButton False [ icon FontAwesome.random, Element.text " Random" ] RandomComic
+            , navButton
+                (isLatest model)
+                [ Element.text "Next "
+                , icon FontAwesome.longArrowAltRight
+                ]
+                NextComic
+            ]
+        )
+
+
+navButton : Bool -> List (Element msg) -> msg -> Element msg
+navButton disabled content msg =
+    let
+        disabledStyles =
+            if disabled then
+                [ Border.color (Color.rgba 0 0 0 0.37)
+                , Element.mouseOver [ Background.color (Color.white) ]
+                , Element.focused [ Background.color (Color.white) ]
+                , Font.color (Color.rgba 0 0 0 0.37)
+                , htmlAttribute "cursor" "default"
+                ]
+            else
+                []
+    in
+        Element.Input.button
+            ([ --Background.color Color.gray
+               Border.color Color.darkBlue
+             , Border.width 2
+             , Element.paddingXY 14 9
+             , Border.rounded 2
+             , Font.size 14
+             , Element.mouseOver [ Background.color (Color.rgba 158 158 158 0.2) ]
+             , Element.mouseDown [ Background.color (Color.rgba 158 158 158 0.4) ]
+             , Element.focused [ Background.color (Color.rgba 0 0 0 0.12) ]
+             , htmlAttribute "text-transform" "uppercase"
+             , htmlAttribute "user-select" "none"
+             , htmlAttribute "-moz-user-select" "none"
+             ]
+                ++ disabledStyles
+            )
+            { label = Element.row [] content, onPress = Just msg }
+
+
+htmlAttribute : String -> String -> Element.Attribute msg
+htmlAttribute key value =
+    Element.htmlAttribute (Html.Attributes.style [ ( key, value ) ])
+
+
+comicAttribute : String -> String -> Element msg
+comicAttribute label text =
+    Element.paragraph [ Font.size 16 ]
+        [ el [ Font.bold ] (Element.text label)
+        , Element.text text
         ]
 
 
@@ -247,7 +403,7 @@ toComicConstructor id title altTitle img transcript year month day =
 
 urlBase : String
 urlBase =
-    "https://cors-anywhere.herokuapp.com/https://xkcd.com/"
+    "https://cors.io/?https://xkcd.com/"
 
 
 urlFileName : String
@@ -269,12 +425,12 @@ getComic id =
         |> Cmd.map ComicResponse
 
 
-viewIf : Bool -> Html msg -> Html msg
+viewIf : Bool -> Element msg -> Element msg
 viewIf condition content =
     if condition then
         content
     else
-        H.text ""
+        Element.text ""
 
 
 possiblyEmptyString : Decoder (Maybe String)
@@ -289,11 +445,16 @@ possiblyEmptyString =
         Decode.map emptyStringToNothing Decode.string
 
 
+subscriptions : Model -> Sub Msg
+subscriptions _ =
+    Keyboard.downs KeyMsg
+
+
 main : Program Never Model Msg
 main =
-    H.program
-        { init = initialModel
+    Navigation.program UrlChange
+        { init = init
         , view = view
         , update = update
-        , subscriptions = (always Sub.none)
+        , subscriptions = subscriptions
         }
