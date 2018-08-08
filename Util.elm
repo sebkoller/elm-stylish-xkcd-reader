@@ -1,0 +1,29 @@
+module Util exposing (isLatest, isFirst)
+
+import Model exposing (Model)
+import Route
+
+
+isLatest : Model -> Bool
+isLatest model =
+    case model.route of
+        Route.Latest ->
+            True
+
+        Route.ComicId id ->
+            model.latestId
+                |> Maybe.map (\latestId -> latestId == id)
+                |> Maybe.withDefault True
+
+
+isFirst : Model -> Bool
+isFirst model =
+    case model.route of
+        Route.ComicId id ->
+            if id == 1 then
+                True
+            else
+                False
+
+        _ ->
+            False
