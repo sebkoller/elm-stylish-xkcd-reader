@@ -22,13 +22,13 @@ setRoute route =
         comicCmd =
             case route of
                 Route.Latest ->
-                    Comic.getLatest |> Cmd.map ComicResponse
+                    Comic.fetchLatest |> Cmd.map ComicResponse
 
                 Route.ComicId id ->
                     Cmd.batch
                         -- Fetch latest comic, in order to store latest id
-                        [ Comic.getLatest |> Cmd.map LatestComicId
-                        , Comic.get id |> Cmd.map ComicResponse
+                        [ Comic.fetchLatest |> Cmd.map LatestComicId
+                        , Comic.fetch id |> Cmd.map ComicResponse
                         ]
     in
         ( Model.initial route

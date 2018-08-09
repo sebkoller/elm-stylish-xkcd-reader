@@ -1,4 +1,4 @@
-module Comic exposing (Comic, getLatest, get)
+module Comic exposing (Comic, fetchLatest, fetch, nextId, previousId)
 
 import Http
 import Date exposing (Date)
@@ -9,6 +9,9 @@ import Json.Decode.Extra exposing (parseInt)
 import RemoteData exposing (WebData)
 
 
+-- MODEL
+
+
 type alias Comic =
     { id : Int
     , title : String
@@ -17,6 +20,10 @@ type alias Comic =
     , publishedOn : Date
     , transcript : Maybe String
     }
+
+
+
+-- DECODERS
 
 
 comicDecoder : Decoder Comic
@@ -73,6 +80,10 @@ possiblyEmptyString =
         Decode.map emptyStringToNothing Decode.string
 
 
+
+-- HTTP REQUESTS
+
+
 urlBase : String
 urlBase =
     "https://cors.io/?https://xkcd.com/"
@@ -83,13 +94,27 @@ urlFileName =
     "info.0.json"
 
 
-getLatest : Cmd (WebData Comic)
-getLatest =
+fetchLatest : Cmd (WebData Comic)
+fetchLatest =
     Http.get (urlBase ++ urlFileName) comicDecoder
         |> RemoteData.sendRequest
 
 
-get : Int -> Cmd (WebData Comic)
-get id =
+fetch : Int -> Cmd (WebData Comic)
+fetch id =
     Http.get (urlBase ++ toString id ++ "/" ++ urlFileName) comicDecoder
         |> RemoteData.sendRequest
+
+
+
+-- HELPERS
+
+
+nextId : Comic -> Int
+nextId =
+    .id >> (+) 1
+
+
+previousId : Comic -> Int
+previousId =
+    .id >> (-) 1

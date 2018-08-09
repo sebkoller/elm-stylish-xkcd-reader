@@ -57,7 +57,7 @@ update msg model =
                 , route = (Route.ComicId id)
               }
             , Cmd.batch
-                [ Comic.get id |> Cmd.map ComicResponse
+                [ Comic.fetch id |> Cmd.map ComicResponse
                 , Navigation.newUrl ("#" ++ toString id)
                 ]
             )
