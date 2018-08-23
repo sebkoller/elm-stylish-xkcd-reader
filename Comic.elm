@@ -86,12 +86,14 @@ possiblyEmptyString =
 
 urlBase : String
 urlBase =
-    "https://cors.io/?https://xkcd.com/"
+    -- CORS enabled XKCD API
+    "https://xkcd.now.sh/"
 
 
 urlFileName : String
 urlFileName =
-    "info.0.json"
+    -- "info.0.json"
+    ""
 
 
 fetchLatest : Cmd (WebData Comic)
