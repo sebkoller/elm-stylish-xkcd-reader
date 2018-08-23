@@ -17,6 +17,8 @@ import Comic exposing (Comic)
 import Route exposing (Route)
 import Update exposing (Msg(..))
 import Util
+import Json.Encode as Json
+import VirtualDom exposing (node, property)
 
 
 icon : FontAwesome.Icon -> Element msg
@@ -33,16 +35,13 @@ view model =
         row
             [ Element.paddingXY 0 10
             , Element.alignTop
-
-            -- , Font.family
-            --     [ Font.external
-            --         { name = "Roboto"
-            --         , url = "https://fonts.googleapis.com/css?family=Roboto:400,500"
-            --         }
-            --     , Font.sansSerif
-            --     ]
+            , Font.family
+                [ Font.typeface "Roboto"
+                , Font.sansSerif
+                ]
             ]
             [ Element.html FontAwesome.useSvg
+            , Element.html robotoFont
             , Element.el [ Element.centerX, Element.width Element.fill ]
                 (column [ Element.spacing 14 ]
                     (case model.comic of
@@ -145,6 +144,16 @@ viewNavigation model =
                 NextComic
             ]
         )
+
+
+robotoFont : Html msg
+robotoFont =
+    (node "link"
+        [ property "href"
+            (Json.string "https://fonts.googleapis.com/css?family=Roboto:400,500")
+        ]
+        []
+    )
 
 
 navButton : Bool -> List (Element msg) -> msg -> Element msg
