@@ -2,13 +2,11 @@ module Main exposing (main)
 
 import Navigation exposing (Location)
 import Keyboard
-import Window
 import View
 import Update exposing (Msg(..))
 import Model exposing (Model)
 import Route exposing (Route)
 import Comic
-import Task
 
 
 init : Location -> ( Model, Cmd Msg )
@@ -32,19 +30,13 @@ setRoute route =
                         ]
     in
         ( Model.initial route
-        , Cmd.batch
-            [ comicCmd
-            , Task.perform WindowResize Window.size
-            ]
+        , comicCmd
         )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-    Sub.batch
-        [ Keyboard.downs KeyMsg
-        , Window.resizes WindowResize
-        ]
+    Keyboard.downs KeyMsg
 
 
 main : Program Never Model Msg

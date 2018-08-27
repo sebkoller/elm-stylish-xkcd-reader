@@ -131,7 +131,11 @@ viewNavigation model =
         (row [ Element.spacing 5, Element.Region.navigation ]
             [ navButton
                 (Util.isFirst model)
-                [ icon FontAwesome.longArrowAltLeft
+                [ icon FontAwesome.angleDoubleLeft ]
+                FirstComic
+            , navButton
+                (Util.isFirst model)
+                [ icon FontAwesome.angleLeft
                 , Element.text " Previous"
                 ]
                 PreviousComic
@@ -139,9 +143,13 @@ viewNavigation model =
             , navButton
                 (Util.isLatest model)
                 [ Element.text "Next "
-                , icon FontAwesome.longArrowAltRight
+                , icon FontAwesome.angleRight
                 ]
                 NextComic
+            , navButton
+                (Util.isLatest model)
+                [ icon FontAwesome.angleDoubleRight ]
+                LastComic
             ]
         )
 

@@ -11,8 +11,8 @@ isLatest model =
             True
 
         Route.ComicId id ->
-            model.latestId
-                |> Maybe.map (\latestId -> latestId == id)
+            model.lastId
+                |> Maybe.map (\lastId -> lastId == id)
                 |> Maybe.withDefault True
 
 

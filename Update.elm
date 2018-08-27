@@ -3,13 +3,11 @@ module Update exposing (Msg(..), update)
 import Model exposing (Model)
 import RemoteData exposing (WebData)
 import Comic exposing (Comic)
-import Element
 import Navigation exposing (Location)
 import Keyboard
 import Route exposing (Route)
 import Random
 import Util
-import Window
 
 
 type Msg
@@ -19,9 +17,10 @@ type Msg
     | PreviousComic
     | NextComic
     | RandomComic
+    | FirstComic
+    | LastComic
     | KeyMsg Keyboard.KeyCode
     | UrlChange Location
-    | WindowResize Window.Size
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -33,7 +32,7 @@ update msg model =
                     if model.route == Route.Latest then
                         ( { model
                             | comic = response
-                            , latestId = Just comic.id
+                            , lastId = Just comic.id
                           }
                         , Cmd.none
                         )
@@ -46,7 +45,7 @@ update msg model =
         LatestComicId response ->
             case response of
                 RemoteData.Success comic ->
-                    ( { model | latestId = Just comic.id }, Cmd.none )
+                    ( { model | lastId = Just comic.id }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -65,9 +64,9 @@ update msg model =
         PreviousComic ->
             case model.route of
                 Route.Latest ->
-                    case model.latestId of
-                        Just latestId ->
-                            update (LoadComic (latestId - 1)) model
+                    case model.lastId of
+                        Just lastId ->
+                            update (LoadComic (lastId - 1)) model
 
                         Nothing ->
                             ( model, Cmd.none )
@@ -86,8 +85,19 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
+        FirstComic ->
+            update (LoadComic 1) model
+
+        LastComic ->
+            case model.lastId of
+                Just lastId ->
+                    update (LoadComic lastId) model
+
+                Nothing ->
+                    ( model, Cmd.none )
+
         RandomComic ->
-            case model.latestId of
+            case model.lastId of
                 Just lastId ->
                     ( model, Random.generate LoadComic (Random.int 1 lastId) )
 
@@ -122,6 +132,3 @@ update msg model =
         UrlChange location ->
             -- TODO do something
             ( model, Cmd.none )
-
-        WindowResize size ->
-            ( { model | device = Element.classifyDevice size }, Cmd.none )
