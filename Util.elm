@@ -1,6 +1,6 @@
 module Util exposing (isLatest, isFirst)
 
-import Model exposing (Model)
+import Types exposing (Model)
 import Route
 
 

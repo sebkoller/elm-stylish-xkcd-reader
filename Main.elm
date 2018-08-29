@@ -1,10 +1,11 @@
 module Main exposing (main)
 
 import Navigation exposing (Location)
-import Keyboard
+import RemoteData
+import Keyboard.Combo
 import View
-import Update exposing (Msg(..))
-import Model exposing (Model)
+import Update
+import Types exposing (Model, Msg(..))
 import Route exposing (Route)
 import Comic
 
@@ -29,14 +30,35 @@ setRoute route =
                         , Comic.fetch id |> Cmd.map ComicResponse
                         ]
     in
-        ( Model.initial route
+        ( initialModel route
         , comicCmd
         )
 
 
+initialModel : Route -> Model
+initialModel route =
+    { comic = RemoteData.Loading
+    , route = route
+    , lastId = Nothing
+    , activeKeyCombos = (Keyboard.Combo.init keyCombos KeyComboMsg)
+    }
+
+
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Keyboard.downs KeyMsg
+subscriptions model =
+    Keyboard.Combo.subscriptions model.activeKeyCombos
+
+
+keyCombos : List (Keyboard.Combo.KeyCombo Msg)
+keyCombos =
+    [ Keyboard.Combo.combo1 (Keyboard.Combo.left) PreviousComic
+    , Keyboard.Combo.combo1 (Keyboard.Combo.h) PreviousComic
+    , Keyboard.Combo.combo1 (Keyboard.Combo.right) NextComic
+    , Keyboard.Combo.combo1 (Keyboard.Combo.l) NextComic
+    , Keyboard.Combo.combo2 ( Keyboard.Combo.shift, Keyboard.Combo.g ) LastComic
+    , Keyboard.Combo.combo1 (Keyboard.Combo.g) FirstComic
+    , Keyboard.Combo.combo1 (Keyboard.Combo.r) RandomComic
+    ]
 
 
 main : Program Never Model Msg

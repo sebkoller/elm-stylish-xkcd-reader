@@ -1,26 +1,13 @@
-module Update exposing (Msg(..), update)
+module Update exposing (update)
 
-import Model exposing (Model)
+import Navigation
+import Types exposing (Model, Msg(..))
 import RemoteData exposing (WebData)
 import Comic exposing (Comic)
-import Navigation exposing (Location)
-import Keyboard
+import Keyboard.Combo
 import Route exposing (Route)
 import Random
 import Util
-
-
-type Msg
-    = ComicResponse (WebData Comic)
-    | LatestComicId (WebData Comic)
-    | LoadComic Int
-    | PreviousComic
-    | NextComic
-    | RandomComic
-    | FirstComic
-    | LastComic
-    | KeyMsg Keyboard.KeyCode
-    | UrlChange Location
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -104,30 +91,12 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        KeyMsg code ->
-            case code of
-                37 ->
-                    -- left arrow
-                    update PreviousComic model
-
-                72 ->
-                    -- h
-                    update PreviousComic model
-
-                39 ->
-                    -- right arrow
-                    update NextComic model
-
-                76 ->
-                    -- l
-                    update NextComic model
-
-                82 ->
-                    -- r
-                    update RandomComic model
-
-                _ ->
-                    ( model, Cmd.none )
+        KeyComboMsg msg ->
+            let
+                ( updatedKeys, comboCmd ) =
+                    Keyboard.Combo.update msg model.activeKeyCombos
+            in
+                ( { model | activeKeyCombos = updatedKeys }, comboCmd )
 
         UrlChange location ->
             -- TODO do something

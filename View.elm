@@ -12,10 +12,9 @@ import Color
 import Date.Extra
 import RemoteData
 import FontAwesome
-import Model exposing (Model)
+import Types exposing (Model, Msg(..))
 import Comic exposing (Comic)
 import Route exposing (Route)
-import Update exposing (Msg(..))
 import Util
 import Json.Encode as Json
 import VirtualDom exposing (node, property)
