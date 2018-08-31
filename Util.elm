@@ -1,16 +1,16 @@
-module Util exposing (isLatest, isFirst)
+module Util exposing (isLast, isFirst)
 
 import Types exposing (Model)
 import Route
 
 
-isLatest : Model -> Bool
-isLatest model =
+isLast : Model -> Bool
+isLast model =
     case model.route of
         Route.Latest ->
             True
 
-        Route.ComicId id ->
+        Route.Comic id ->
             model.lastId
                 |> Maybe.map (\lastId -> lastId == id)
                 |> Maybe.withDefault True
@@ -19,7 +19,7 @@ isLatest model =
 isFirst : Model -> Bool
 isFirst model =
     case model.route of
-        Route.ComicId id ->
+        Route.Comic id ->
             if id == 1 then
                 True
             else

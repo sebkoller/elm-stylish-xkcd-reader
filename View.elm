@@ -1,5 +1,6 @@
 module View exposing (view)
 
+import Http
 import Html exposing (Html)
 import Html.Attributes
 import Element exposing (Element, el, row, column, paragraph)
@@ -51,7 +52,7 @@ view model =
                             ]
 
                         RemoteData.Failure error ->
-                            [ Element.text <| toString error ]
+                            [ viewError error ]
 
                         RemoteData.Loading ->
                             [ viewRouteHeader model.route
@@ -98,7 +99,7 @@ viewRouteHeader route =
         Route.Latest ->
             viewHeader "#"
 
-        Route.ComicId id ->
+        Route.Comic id ->
             viewHeader ("#" ++ toString id)
 
 
@@ -126,31 +127,70 @@ viewComicBody comic =
 
 viewNavigation : Model -> Element Msg
 viewNavigation model =
-    el [ Element.centerX ]
-        (row [ Element.spacing 5, Element.Region.navigation ]
-            [ navButton
-                (Util.isFirst model)
-                [ icon FontAwesome.angleDoubleLeft ]
-                FirstComic
-            , navButton
-                (Util.isFirst model)
-                [ icon FontAwesome.angleLeft
-                , Element.text " Previous"
+    let
+        isLoadingLatest =
+            model.route == Route.Latest && not (RemoteData.isSuccess model.comic)
+
+        isFirst =
+            Util.isFirst model
+
+        isLast =
+            Util.isLast model
+
+        lastIdMissing =
+            isNothing model.lastId
+    in
+        el [ Element.centerX ]
+            (row [ Element.spacing 5, Element.Region.navigation ]
+                [ navButton
+                    (isFirst || isLoadingLatest)
+                    [ icon FontAwesome.angleDoubleLeft ]
+                    FirstComic
+                , navButton
+                    (isFirst || isLoadingLatest)
+                    [ icon FontAwesome.angleLeft
+                    , Element.text " Previous"
+                    ]
+                    PreviousComic
+                , navButton
+                    lastIdMissing
+                    [ icon FontAwesome.random, Element.text " Random" ]
+                    RandomComic
+                , navButton
+                    isLast
+                    [ Element.text "Next "
+                    , icon FontAwesome.angleRight
+                    ]
+                    NextComic
+                , navButton
+                    isLast
+                    [ icon FontAwesome.angleDoubleRight ]
+                    LastComic
                 ]
-                PreviousComic
-            , navButton False [ icon FontAwesome.random, Element.text " Random" ] RandomComic
-            , navButton
-                (Util.isLatest model)
-                [ Element.text "Next "
-                , icon FontAwesome.angleRight
-                ]
-                NextComic
-            , navButton
-                (Util.isLatest model)
-                [ icon FontAwesome.angleDoubleRight ]
-                LastComic
-            ]
-        )
+            )
+
+
+viewError : Http.Error -> Element msg
+viewError error =
+    let
+        errorText =
+            case error of
+                Http.Timeout ->
+                    "A timeout has occured!"
+
+                Http.NetworkError ->
+                    "Your connection seems to be offline!"
+
+                Http.BadPayload _ _ ->
+                    "The API returned an unexpected payload!"
+
+                Http.BadStatus _ ->
+                    "The API returned an error!"
+
+                Http.BadUrl _ ->
+                    "The API url seems to be misformed!"
+    in
+        viewHeader errorText
 
 
 robotoFont : Html msg
@@ -218,3 +258,13 @@ viewIf condition content =
         content
     else
         Element.text ""
+
+
+isNothing : Maybe a -> Bool
+isNothing m =
+    case m of
+        Nothing ->
+            True
+
+        Just _ ->
+            False

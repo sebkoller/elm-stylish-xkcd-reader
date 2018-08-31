@@ -16,15 +16,25 @@ update msg model =
         ComicResponse response ->
             case response of
                 RemoteData.Success comic ->
-                    if model.route == Route.Latest then
-                        ( { model
-                            | comic = response
-                            , lastId = Just comic.id
-                          }
-                        , Cmd.none
-                        )
-                    else
+                    -- the route can change in the meantime
+                    -- only save the comic if latest requested one
+                    if model.route == Route.Comic comic.id then
                         ( { model | comic = response }, Cmd.none )
+                    else
+                        ( model, Cmd.none )
+
+                _ ->
+                    ( { model | comic = response }, Cmd.none )
+
+        LatestComicResponse response ->
+            case response of
+                RemoteData.Success comic ->
+                    ( { model
+                        | comic = response
+                        , lastId = Just comic.id
+                      }
+                    , Cmd.none
+                    )
 
                 _ ->
                     ( { model | comic = response }, Cmd.none )
@@ -40,7 +50,7 @@ update msg model =
         LoadComic id ->
             ( { model
                 | comic = RemoteData.Loading
-                , route = (Route.ComicId id)
+                , route = (Route.Comic id)
               }
             , Cmd.batch
                 [ Comic.fetch id |> Cmd.map ComicResponse
@@ -58,13 +68,13 @@ update msg model =
                         Nothing ->
                             ( model, Cmd.none )
 
-                Route.ComicId id ->
+                Route.Comic id ->
                     update (LoadComic (id - 1)) model
 
         NextComic ->
             case model.route of
-                Route.ComicId id ->
-                    if not (Util.isLatest model) then
+                Route.Comic id ->
+                    if not (Util.isLast model) then
                         update (LoadComic (id + 1)) model
                     else
                         ( model, Cmd.none )

@@ -17,6 +17,7 @@ type alias Model =
 
 type Msg
     = ComicResponse (WebData Comic)
+    | LatestComicResponse (WebData Comic)
     | LatestComicId (WebData Comic)
     | LoadComic Int
     | PreviousComic

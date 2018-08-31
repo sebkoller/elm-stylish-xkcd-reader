@@ -21,9 +21,9 @@ setRoute route =
         comicCmd =
             case route of
                 Route.Latest ->
-                    Comic.fetchLatest |> Cmd.map ComicResponse
+                    Comic.fetchLatest |> Cmd.map LatestComicResponse
 
-                Route.ComicId id ->
+                Route.Comic id ->
                     Cmd.batch
                         -- Fetch latest comic, in order to store latest id
                         [ Comic.fetchLatest |> Cmd.map LatestComicId
