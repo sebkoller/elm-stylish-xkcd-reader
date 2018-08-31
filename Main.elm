@@ -51,13 +51,13 @@ subscriptions model =
 
 keyCombos : List (Keyboard.Combo.KeyCombo Msg)
 keyCombos =
-    [ Keyboard.Combo.combo1 (Keyboard.Combo.left) PreviousComic
-    , Keyboard.Combo.combo1 (Keyboard.Combo.h) PreviousComic
-    , Keyboard.Combo.combo1 (Keyboard.Combo.right) NextComic
-    , Keyboard.Combo.combo1 (Keyboard.Combo.l) NextComic
+    [ Keyboard.Combo.combo1 Keyboard.Combo.left PreviousComic
+    , Keyboard.Combo.combo1 Keyboard.Combo.h PreviousComic
+    , Keyboard.Combo.combo1 Keyboard.Combo.right NextComic
+    , Keyboard.Combo.combo1 Keyboard.Combo.l NextComic
     , Keyboard.Combo.combo2 ( Keyboard.Combo.shift, Keyboard.Combo.g ) LastComic
-    , Keyboard.Combo.combo1 (Keyboard.Combo.g) FirstComic
-    , Keyboard.Combo.combo1 (Keyboard.Combo.r) RandomComic
+    , Keyboard.Combo.combo1 Keyboard.Combo.g FirstComic
+    , Keyboard.Combo.combo1 Keyboard.Combo.r RandomComic
     ]
 
 

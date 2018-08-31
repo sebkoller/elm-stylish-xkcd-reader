@@ -12,7 +12,7 @@ isLast model =
 
         Route.Comic id ->
             model.lastId
-                |> Maybe.map (\lastId -> lastId == id)
+                |> Maybe.map (\lastId -> lastId <= id)
                 |> Maybe.withDefault True
 
 

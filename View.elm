@@ -52,7 +52,10 @@ view model =
                             ]
 
                         RemoteData.Failure error ->
-                            [ viewError error ]
+                            [ viewRouteHeader model.route
+                            , viewNavigation model
+                            , viewError error
+                            ]
 
                         RemoteData.Loading ->
                             [ viewRouteHeader model.route
@@ -179,7 +182,7 @@ viewError error =
                     "A timeout has occured!"
 
                 Http.NetworkError ->
-                    "Your connection seems to be offline!"
+                    "Trouble reaching the API!"
 
                 Http.BadPayload _ _ ->
                     "The API returned an unexpected payload!"
@@ -210,16 +213,21 @@ navButton disabled content msg =
             if disabled then
                 [ Border.color (Color.rgba 0 0 0 0.37)
                 , Element.mouseOver [ Background.color (Color.white) ]
-
-                -- , Element.focused [ Background.color (Color.white) ]
+                , Element.mouseDown [ Background.color (Color.white) ]
                 , Font.color (Color.rgba 0 0 0 0.37)
                 , htmlAttribute "cursor" "default"
                 ]
             else
                 []
+
+        maybeMsg =
+            if disabled then
+                Nothing
+            else
+                Just msg
     in
         Element.Input.button
-            ([ Border.color Color.darkBlue
+            ([ Border.color Color.black
              , Border.width 2
              , Element.paddingXY 14 9
              , Border.rounded 2
@@ -227,8 +235,6 @@ navButton disabled content msg =
              , Font.medium
              , Element.mouseOver [ Background.color (Color.rgba 158 158 158 0.2) ]
              , Element.mouseDown [ Background.color (Color.rgba 158 158 158 0.4) ]
-
-             -- , Element.focused [ Background.color (Color.rgba 0 0 0 0.12) ]
              , htmlAttribute "box-shadow" "none"
              , htmlAttribute "text-transform" "uppercase"
              , htmlAttribute "user-select" "none"
@@ -236,7 +242,7 @@ navButton disabled content msg =
              ]
                 ++ disabledStyles
             )
-            { label = row [ Element.spacing 10 ] content, onPress = Just msg }
+            { label = row [ Element.spacing 10 ] content, onPress = maybeMsg }
 
 
 htmlAttribute : String -> String -> Element.Attribute msg
